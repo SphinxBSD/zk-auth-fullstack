@@ -1,4 +1,3 @@
-// zkUtils.js
 import { Noir } from '@noir-lang/noir_js';
 import { UltraHonkBackend } from '@aztec/bb.js';
 
@@ -116,45 +115,58 @@ class ZKAuthSystem {
     }
 
     // Generar prueba ZK usando assertCommitment (para login)
-    async generateLoginProof(email, password, salt, storedCommitment) {
-        if (!this.initialized) {
-            throw new Error('Sistema ZK no inicializado. Llama initialize() primero.');
-        }
+// ...existing code...
 
-        try {
-            console.log('Generando prueba de login con assertCommitment...');
+async generateLoginProof(email, password, salt, storedCommitment) {
+    if (!this.initialized) {
+        throw new Error('Sistema ZK no inicializado. Llama initialize() primero.');
+    }
 
-            const input = {
-                email: stringToField(email),
-                password: stringToField(password),
+    try {
+        console.log('Generando prueba de login con assertCommitment...');
+        console.log('Datos de entrada:', {
+            email: stringToField(email),
+            password: stringToField(password), 
+            salt: salt,
+            stored_commitment: storedCommitment
+        });
+
+        const input = {
+            email: stringToField(email),
+            password: stringToField(password),
+            salt: salt,
+            stored_commitment: storedCommitment
+        };
+
+        // Ejecutar el circuito y generar la prueba
+        console.log('Ejecutando circuito assertCommitment...');
+        const witness = await this.assertCircuit.execute(input);
+        const proof = await this.assertBackend.generateProof(witness.witness);
+        
+        console.log('Prueba de login generada exitosamente');
+        
+        return {
+            proof: proof,
+            publicSignals: {
                 salt: salt,
                 stored_commitment: storedCommitment
-            };
+            },
+            success: true
+        };
 
-            // Generar la prueba usando el circuito de aserción
-            const proof = await this.assertCircuit.generateProof(input);
-            
-            console.log('Prueba de login generada exitosamente');
-            
-            return {
-                proof: proof,
-                publicSignals: {
-                    salt: salt,
-                    stored_commitment: storedCommitment
-                },
-                success: true
-            };
-
-        } catch (error) {
-            console.error('Error generando prueba de login:', error);
-            return {
-                proof: null,
-                publicSignals: null,
-                success: false,
-                error: error.message
-            };
-        }
+    } catch (error) {
+        console.error('Error generando prueba de login:', error);
+        console.error('Stack trace:', error.stack);
+        return {
+            proof: null,
+            publicSignals: null,
+            success: false,
+            error: error.message
+        };
     }
+}
+
+// ...existing code...
 
     // Verificar prueba de login
     async verifyLoginProof(proof) {
@@ -165,7 +177,8 @@ class ZKAuthSystem {
         try {
             console.log('Verificando prueba de login...');
             
-            const isValid = await this.assertCircuit.verifyProof(proof);
+            // CORREGIDO: Usar backend.verifyProof en lugar de circuit.verifyProof
+            const isValid = await this.assertBackend.verifyProof(proof);
             
             console.log('Resultado de verificación:', isValid);
             return isValid;
@@ -265,9 +278,10 @@ async function prepareRegistrationData(username, email, password) {
     }
 }
 
-// Función para generar prueba de login
+// Función para generar prueba de login (CORREGIDA)
 async function generateLoginProof(email, password, salt, storedCommitment) {
     try {
+        console.log('Iniciando generateLoginProof...');
         const zkSystem = await getZKSystem();
         return await zkSystem.generateLoginProof(email, password, salt, storedCommitment);
     } catch (error) {
@@ -281,7 +295,7 @@ async function generateLoginProof(email, password, salt, storedCommitment) {
     }
 }
 
-// Función para verificar prueba de login
+// Función para verificar prueba de login (CORREGIDA)
 async function verifyLoginProof(proof) {
     try {
         const zkSystem = await getZKSystem();

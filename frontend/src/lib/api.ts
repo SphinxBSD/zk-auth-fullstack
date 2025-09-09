@@ -1,6 +1,6 @@
 import axios, {AxiosInstance} from 'axios';
 import Cookies from 'js-cookie';
-import {RegisterResponse, RegisterRequest, User } from '@/types/auth'
+import {RegisterResponse, RegisterRequest, User, PublicData, LoginRequest, LoginResponse } from '@/types/auth'
 
 class ApiClient {
     private api: AxiosInstance;
@@ -32,9 +32,29 @@ class ApiClient {
         )
     }
 
-    // Should define RegisterRequest, AuthResponse
     async register(data: RegisterRequest): Promise<RegisterResponse> {
         const response = await this.api.post<RegisterResponse>('/api/register', data);
+        return response.data;
+    }
+
+    async getPublicUserData(username: string): Promise<PublicData> {
+        const response = await this.api.get<PublicData>(`/api/user/${username}/public`);
+        return response.data;
+    }
+
+    // Nuevo método para login con ZK proof
+    async login(data: LoginRequest): Promise<LoginResponse> {
+        const response = await this.api.post<LoginResponse>('/api/login', data);
+        
+        // Si el login es exitoso, guardar el token
+        if (response.data.success && response.data.token) {
+            Cookies.set('auth-token', response.data.token, { 
+                expires: 7, // 7 días
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'strict'
+            });
+        }
+        
         return response.data;
     }
 
