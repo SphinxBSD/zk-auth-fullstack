@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { generateLoginProof, verifyLoginProof } from '../utils/zkUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StoredUser {
   username: string;
@@ -12,6 +12,45 @@ interface StoredUser {
 }
 
 export default function HomePage() {
+  const { user, logout, loading} = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
+            Bienvenido
+          </h1>
+          <p className="text-gray-600 mb-8 text-center">
+            Por favor inicia sesión o regístrate para continuar
+          </p>
+          <div className="space-y-4">
+            <Link
+              href="/login"
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200 block text-center"
+            >
+              Iniciar Sesión
+            </Link>
+            <Link
+              href="/register"
+              className="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition duration-200 block text-center"
+            >
+              Registrarse
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error' | ''>('');
@@ -53,29 +92,6 @@ export default function HomePage() {
 
       console.log('Iniciando proceso de login ZK...');
       console.log('Usuario encontrado:', user.username);
-
-      // Generar prueba ZK usando el circuito assertCommitment
-      const proofResult = await generateLoginProof(
-        loginData.email,
-        loginData.password,
-        user.salt,
-        user.commitment
-      );
-
-      if (!proofResult.success) {
-        showMessage(`Error generando prueba ZK: ${proofResult.error}`, 'error');
-        return;
-      }
-
-      // Verificar la prueba
-      const isValidProof = await verifyLoginProof(proofResult.proof);
-
-      if (isValidProof) {
-        showMessage('¡Login exitoso! Credenciales verificadas con ZK.', 'success');
-        console.log('Login ZK exitoso para usuario:', loginData.username);
-      } else {
-        showMessage('Credenciales incorrectas', 'error');
-      }
 
     } catch (error) {
       console.error('Error durante el login:', error);

@@ -14,7 +14,7 @@ const users = new Map();
 // Endpoint de registro
 app.post('/api/register', async (req, res) => {
     try {
-        const {username, commitment, salt} = res.body;
+        const {username, commitment, salt} = req.body;
 
         // Validaciones basicas
         if (!username || !commitment || !salt) {
@@ -60,7 +60,7 @@ app.post('/api/register', async (req, res) => {
 // Endpoint para obtener datos públicos de un usuario (para login)
 app.get('/api/user/:username/public', (req, res) => {
     try {
-        const {username} = req.body;
+        const {username} = req.params;
 
         const user = users.get(username);
         if (!user) {
